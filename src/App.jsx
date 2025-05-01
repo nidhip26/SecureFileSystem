@@ -1,38 +1,59 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+// src/App.jsx
+import { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+
+import Login from './pages/Login';
+import Register from './pages/Register';
 import SecureFileSharingGUI from './pages/SecureFileSharingGUI';
 
+export default function App() {
+  const [username, setUsername] = useState(localStorage.getItem('username'));
 
-function App() {
-  return <SecureFileSharingGUI />;
-  // const [count, setCount] = useState(0)
+  const handleLogin = (name) => {
+    localStorage.setItem('username', name);
+    setUsername(name);
+  };
 
-  // return (
-  //   <>
-  //     <div>
-  //       <a href="https://vite.dev" target="_blank">
-  //         <img src={viteLogo} className="logo" alt="Vite logo" />
-  //       </a>
-  //       <a href="https://react.dev" target="_blank">
-  //         <img src={reactLogo} className="logo react" alt="React logo" />
-  //       </a>
-  //     </div>
-  //     <h1>Vite + React</h1>
-  //     <div className="card">
-  //       <button onClick={() => setCount((count) => count + 1)}>
-  //         count is {count}
-  //       </button>
-  //       <p>
-  //         Edit <code>src/App.jsx</code> and save to test HMR
-  //       </p>
-  //     </div>
-  //     <p className="read-the-docs">
-  //       Click on the Vite and React logos to learn more
-  //     </p>
-  //   </>
-  // )
+  const handleLogout = () => {
+    localStorage.removeItem('username');
+    setUsername(null);
+  };
+
+  return (
+    <Router>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            username ? (
+              <SecureFileSharingGUI username={username} onLogout={handleLogout} />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            username ? (
+              <Navigate to="/" />
+            ) : (
+              <Login onLogin={handleLogin} />
+            )
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            username ? (
+              <Navigate to="/" />
+            ) : (
+              <Register onRegister={handleLogin} />
+            )
+          }
+        />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </Router>
+  );
 }
-
-export default App

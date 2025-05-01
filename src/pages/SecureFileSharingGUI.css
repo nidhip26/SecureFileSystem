@@ -8,12 +8,15 @@ body, html {
   font-family: 'Quicksand', sans-serif;
   background-color: #fff0f6; /* light pink background */
   color: #4b2c3a; /* soft chocolate text */
+  height: 100%;
 }
 
 /* 💖 Container holds the sidebar and main content */
 .container {
   display: flex;
-  height: 100vh;
+  height: calc(100vh - 60px); /* Adjusted for the navbar height */
+  flex-direction: row;
+  margin-top: 60px; /* Adjusts for the fixed navbar */
 }
 
 /* 🎀 Sidebar styles */
@@ -26,6 +29,38 @@ body, html {
   padding: 1rem 0;
   gap: 1rem;
   border-right: 2px solid #f8bbd0;
+  position: fixed; /* Fixes the sidebar to the left */
+  top: 60px; /* Adjusts for the fixed navbar */
+  left: 0;
+  height: calc(100vh - 60px); /* Adjusted to be below the navbar */
+}
+
+/* 💫 Navbar styling */
+nav {
+  background-color: #fff;
+  border-bottom: 2px solid #f8bbd0;
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 20px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 10;
+}
+
+nav button {
+  background-color: #d63384;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 1rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+nav button:hover {
+  background-color: #ff6f91;
 }
 
 /* 🧸 Avatar buttons for each user */
@@ -63,6 +98,7 @@ body, html {
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  margin-left: 5rem; /* Adjusted to avoid sidebar overlap */
 }
 
 /* ✨ Welcome message */
