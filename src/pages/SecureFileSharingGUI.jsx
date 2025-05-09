@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+// import './SecureFileSharingGUI.css';
 import './SecureFileSharingGUI.css';
+
 import { useNavigate } from 'react-router-dom';
 
 export default function SecureFileSharingGUI({ username, onLogout }) {
@@ -30,30 +32,30 @@ export default function SecureFileSharingGUI({ username, onLogout }) {
   };
 
   const handleUpload = (event) => {
-    const files = Array.from(event.target.files);
+    const file = event.target.files[0];
+    if (!file) return;
+  
     const formData = new FormData();
-
-    files.forEach((file) => {
-      formData.append('file', file);
-    });
-    formData.append('sender_id', username); // Add sender's username or ID
+    formData.append('file', file);
+    formData.append('sender_username', username); 
     formData.append('recipient_username', selectedUser);
-
+  
     fetch('http://127.0.0.1:5000/upload', {
       method: 'POST',
       body: formData
     })
       .then(res => res.json())
       .then(data => {
-        const uploaded = data.files.map(file => ({
+        const uploaded = {
           name: file.name,
           uploadedAt: new Date().toLocaleString(),
           sharedWith: selectedUser
-        }));
-        setUploadedFiles(prev => [...prev, ...uploaded]);
+        };
+        setUploadedFiles(prev => [...prev, uploaded]);
       })
       .catch(err => console.error('Error uploading file:', err));
   };
+  
 
   const handleDownload = (fileName) => {
     alert(`Simulating download for: ${fileName}`);
@@ -74,7 +76,11 @@ export default function SecureFileSharingGUI({ username, onLogout }) {
     <div className="container">
       <nav style={{ display: "flex", justifyContent: "space-between", padding: "10px", background: "#eee" }}>
         <span>Logged in as <strong>{username}</strong></span>
-        <button onClick={handleLogout}>Logout</button>
+        <div>
+        <button onClick={() => navigate('/Files')} style={{ marginRight: '10px' }}>  My Files</button>
+
+          <button onClick={handleLogout}>Logout</button>
+        </div>
       </nav>
 
       {/* Sidebar with tabs */}
@@ -101,7 +107,6 @@ export default function SecureFileSharingGUI({ username, onLogout }) {
             <div className="upload-box">
               <input
                 type="file"
-                multiple
                 className="file-input"
                 onChange={handleUpload}
               />

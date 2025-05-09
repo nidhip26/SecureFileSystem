@@ -1,32 +1,3 @@
-// import { useState } from 'react';
-// import axios from 'axios';
-
-// export default function Login({ onLogin }) {
-//   const [username, setUsername] = useState('');
-//   const [pw, setPw] = useState('');
-//   const [msg, setMsg] = useState('');
-
-//   const handleLogin = async () => {
-//     try {
-//       const res = await axios.post('http://127.0.0.1:5000/login', {
-//         username, password: pw
-//       });
-//       onLogin(res.data.user);
-//     } catch (err) {
-//       setMsg('Invalid credentials');
-//     }
-//   };
-
-//   return (
-//     <div>
-//       <h2>Login</h2>
-//       <input placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} />
-//       <input type="password" placeholder="Password" value={pw} onChange={e => setPw(e.target.value)} />
-//       <button onClick={handleLogin}>Login</button>
-//       <div>{msg}</div>
-//     </div>
-//   );
-// }
 
 // src/pages/Login.jsx
 import { useState } from 'react';
