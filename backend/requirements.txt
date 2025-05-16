@@ -5,3 +5,4 @@ python-dotenv
 flask_bcrypt
 psycopg2-binary
 cryptography
+gunicorn
