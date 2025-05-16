@@ -9,7 +9,7 @@ export default function Files() {
 
   useEffect(() => {
     axios
-      .get(`http://127.0.0.1:5000/files?username=${username}`)
+      .get(`https://securefilesystem.onrender.com/files?username=${username}`)
       .then(res => setFiles(res.data))
       .catch(err => console.error(err));
   }, [username]);
@@ -29,7 +29,7 @@ export default function Files() {
   
       const response = await axios({
         method: 'post',
-        url: `http://127.0.0.1:5000/download/${selectedFile.id}`,
+        url: `https://securefilesystem.onrender.com/download/${selectedFile.id}`,
         data: {
           username,
           password: inputPassword
