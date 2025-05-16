@@ -6,3 +6,4 @@ flask_bcrypt
 psycopg2-binary
 cryptography
 gunicorn
+b2sdk
