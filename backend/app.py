@@ -25,13 +25,7 @@ from cryptography.hazmat.backends import default_backend
 from utils.b2_upload import upload_file_to_b2
 
 app = Flask(__name__)
-CORS(app, resources={
-    r"/*": {
-        "origins": ["http://localhost:5173", "http://127.0.0.1:5173"],
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"]
-    }
-})
+CORS(app)
 bcrypt = Bcrypt(app)
 
 # PostgreSQL connection
