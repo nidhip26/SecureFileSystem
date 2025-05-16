@@ -14,7 +14,7 @@ export default function Register() {
     e.preventDefault();
     if (password !== confirmPassword) return alert("Passwords do not match");
     try {
-      await axios.post("http://127.0.0.1:5001/register", { username, password });
+      await axios.post("https://securefilesystem.onrender.com/register", { username, password });
 
       alert("Registered successfully!");
       navigate("/login");
