@@ -1,7 +1,7 @@
-
 // src/pages/Login.jsx
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import './Login.css';
 
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState('');
@@ -10,20 +10,38 @@ export default function Login({ onLogin }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Add real auth call here
-    onLogin(username);
+    localStorage.setItem('username', username); // ✅ Also ensure username is saved
+    localStorage.setItem('password', password); // ✅ Save password for later use
+    onLogin(username)
     navigate('/');
   };
+  
 
   return (
-    <div>
+    <div className="login-container">
+    <div className="login-card">
       <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
-        <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" />
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" />
-        <button type="submit">Login</button>
+      <form onSubmit={handleSubmit} className="login-form">
+        <input
+          className="login-input"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="Username"
+        />
+        <input
+          className="login-input"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+        />
+        <button type="submit" className="login-button">Login</button>
       </form>
-      <p>No account? <Link to="/register">Register</Link></p>
+      <p className="login-footer">
+        No account? <Link to="/register">Register</Link>
+      </p>
     </div>
+  </div>
+    
   );
 }

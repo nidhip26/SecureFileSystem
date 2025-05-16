@@ -25,7 +25,13 @@ from cryptography.hazmat.backends import default_backend
 from utils.b2_upload import upload_file_to_b2
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={
+    r"/*": {
+        "origins": ["http://localhost:5173", "http://127.0.0.1:5173"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
 bcrypt = Bcrypt(app)
 
 # PostgreSQL connection
@@ -135,9 +141,10 @@ def register():
 
     # Bcrypt hash for password
     password_hash = bcrypt.generate_password_hash(password).decode()
-
+    print("password hash: ", password_hash)
     # RSA key pair
     private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    print("uncoded private key: ", private_key)
     private_bytes = private_key.private_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.PKCS8,
@@ -147,6 +154,7 @@ def register():
         serialization.Encoding.PEM,
         serialization.PublicFormat.SubjectPublicKeyInfo
     )
+    print("public key: ", public_key)
 
     # use PBKDF2 to derive AES key from password
     salt = os.urandom(16)
@@ -154,6 +162,9 @@ def register():
     kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=100_000, backend=default_backend())
     aes_key = kdf.derive(password.encode())
 
+    print("salt: ", salt)
+    print("iv: ", iv)
+    print("aes key", aes_key)
     # Encrypt the private key with aes key
     cipher = Cipher(algorithms.AES(aes_key), modes.CBC(iv), backend=default_backend())
     encryptor = cipher.encryptor()
@@ -309,7 +320,6 @@ def get_file_content():
     return jsonify({"content": decrypted_data.decode('utf-8')}), 200
 
 
-# Updated version of the decryption logic for private keys
 @app.route('/download/<file_id>', methods=['POST', 'OPTIONS'])
 def download_file(file_id):
     # Handle OPTIONS request (CORS preflight)
@@ -345,8 +355,6 @@ def download_file(file_id):
         salt = b64decode(user['aes_salt'])
         iv = b64decode(user['aes_iv'])
         
-        print(f"Retrieved user info for: {username}")
-        
         # Step 2: Derive AES key from password
         kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=100_000, backend=default_backend())
         aes_key = kdf.derive(password.encode())
@@ -355,24 +363,24 @@ def download_file(file_id):
         cipher = Cipher(algorithms.AES(aes_key), modes.CBC(iv), backend=default_backend())
         decryptor = cipher.decryptor()
         decrypted_data = decryptor.update(encrypted_private_key) + decryptor.finalize()
+       
+        # Improved private key handling
+        private_key = None
+        key_load_successful = False
         
-        # Try to load the key directly without manual padding removal
-        # This assumes the PEM format has proper markers and can be loaded directly
+        # Try loading directly first
         try:
-            # First try: directly load the key
-            print("Attempting to load private key directly")
             private_key = serialization.load_pem_private_key(
                 decrypted_data, 
                 password=None, 
                 backend=default_backend()
             )
-            print("Successfully loaded private key directly")
+            key_load_successful = True
         except Exception as e1:
-            print(f"Failed direct load: {str(e1)}")
+            print(f"Direct key load failed: {str(e1)}")
             
-            # Second try: Look for PEM markers and extract content between them
+            # Look for PEM markers
             try:
-                print("Trying to find PEM markers")
                 begin_marker = b"-----BEGIN PRIVATE KEY-----"
                 end_marker = b"-----END PRIVATE KEY-----"
                 
@@ -381,16 +389,14 @@ def download_file(file_id):
                 
                 if begin_idx >= 0 and end_idx > begin_idx:
                     key_data = decrypted_data[begin_idx:end_idx + len(end_marker)]
-                    print(f"Found PEM markers at {begin_idx} to {end_idx}")
-                    
                     private_key = serialization.load_pem_private_key(
                         key_data, 
                         password=None, 
                         backend=default_backend()
                     )
-                    print("Successfully loaded key with marker extraction")
+                    key_load_successful = True
                 else:
-                    # Third try: Check if this is RSA key format
+                    # Try RSA format
                     begin_rsa = b"-----BEGIN RSA PRIVATE KEY-----"
                     end_rsa = b"-----END RSA PRIVATE KEY-----"
                     
@@ -399,25 +405,20 @@ def download_file(file_id):
                     
                     if begin_idx >= 0 and end_idx > begin_idx:
                         key_data = decrypted_data[begin_idx:end_idx + len(end_rsa)]
-                        print(f"Found RSA PEM markers at {begin_idx} to {end_idx}")
-                        
                         private_key = serialization.load_pem_private_key(
                             key_data, 
                             password=None, 
                             backend=default_backend()
                         )
-                        print("Successfully loaded RSA key with marker extraction")
-                    else:
-                        raise ValueError("No valid PEM markers found in decrypted data")
+                        key_load_successful = True
             except Exception as e2:
-                print(f"Failed to process PEM content: {str(e2)}")
-                # Last resort - check if it's a registration issue
-                cursor.execute("SELECT username, encrypted_private_key FROM users WHERE id = %s", (user_id,))
-                user_check = cursor.fetchone()
-                return jsonify({
-                    'error': 'Invalid password or corrupted key. User might need to re-register.',
-                    'debug_info': f"Attempted to decrypt {len(encrypted_private_key)} bytes with {len(password)} char password"
-                }), 400
+                print(f"PEM extraction failed: {str(e2)}")
+        
+        if not key_load_successful or private_key is None:
+            return jsonify({
+                'error': 'Failed to decrypt private key. Invalid password or corrupted key.',
+                'debug_info': f"Key decryption failed with {len(password)} character password"
+            }), 400
             
         # Step 4: Get file permission
         cursor.execute(
@@ -439,7 +440,6 @@ def download_file(file_id):
                     label=None
                 )
             )
-            print("Successfully decrypted file AES key")
         except Exception as e:
             print(f"Failed to decrypt file key: {str(e)}")
             return jsonify({'error': 'Failed to decrypt file key'}), 400
@@ -457,24 +457,30 @@ def download_file(file_id):
         
         # Step 6: Download encrypted file from B2
         encrypted_data = download_file_from_b2(s3_key)
-        if encrypted_data is None:
-            return jsonify({'error': 'Failed to download file from storage'}), 500
+        if encrypted_data is None or len(encrypted_data) == 0:
+            return jsonify({'error': 'Failed to download file from storage or file is empty'}), 500
             
-        print(f"Downloaded encrypted file: {s3_key}")
-        
         # Step 7: Decrypt the file
         cipher = Cipher(algorithms.AES(file_aes_key), modes.CBC(file_iv), backend=default_backend())
         decryptor = cipher.decryptor()
         padded_data = decryptor.update(encrypted_data) + decryptor.finalize()
         
+        # Safety check to prevent index error
+        if len(padded_data) == 0:
+            return jsonify({'error': 'Decryption resulted in empty data'}), 400
+            
         # Handle padding for file data
         pad_len = padded_data[-1]
         if not (1 <= pad_len <= 16):
             print(f"Invalid file padding value: {pad_len}")
-            return jsonify({'error': 'Corrupted file data'}), 400
+            return jsonify({'error': 'Corrupted file data or invalid padding'}), 400
             
-        decrypted_data = padded_data[:-pad_len]
-        print(f"Successfully decrypted file: {filename}")
+        # Make sure we don't go out of bounds
+        if pad_len <= len(padded_data):
+            decrypted_data = padded_data[:-pad_len]
+        else:
+            # Something is wrong with the padding
+            return jsonify({'error': 'Invalid padding value exceeds data length'}), 400
         
         # Step 8: Send the file
         response = send_file(
@@ -489,6 +495,8 @@ def download_file(file_id):
         return response
         
     except Exception as e:
+        import traceback
+        traceback.print_exc()  # Print full stack trace to console
         print(f"Unexpected error in download_file: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 

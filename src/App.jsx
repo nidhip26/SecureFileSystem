@@ -10,16 +10,19 @@ export default function App() {
   const [username, setUsername] = useState(localStorage.getItem('username'));
   const [password, setPassword] = useState(localStorage.getItem('password'));
 
-  const handleLogin = (name) => {
-    localStorage.setItem('username', name);
-    localStorage.setItem('password', password);
-    setUsername(name);
-    setPassword(password);
-  };
+  const handleLogin = (name, pass) => {
+  localStorage.setItem('username', name);
+  localStorage.setItem('password', pass);
+  setUsername(name);
+  setPassword(pass);
+};
+
 
   const handleLogout = () => {
     localStorage.removeItem('username');
     setUsername(null);
+    localStorage.removeItem('password');
+    setPassword(null);
   };
 
   return (

@@ -2,6 +2,7 @@
 import os
 from b2sdk.v2 import InMemoryAccountInfo, B2Api
 from dotenv import load_dotenv
+from io import BytesIO
 
 
 
@@ -27,15 +28,26 @@ def upload_file_to_b2(file_obj, filename):
 
 from io import BytesIO
 
+# def download_file_from_b2(s3_key):
+#     try:
+#         byte_stream = BytesIO()
+#         print("s3", s3_key)
+#         bucket.download_file_by_name(s3_key, byte_stream)
+#         byte_stream.seek(0)
+#         return byte_stream.read()
+#     except Exception as e:
+#         print("Error downloading file from B2:", e)
+#         return None
+
 def download_file_from_b2(s3_key):
     try:
         byte_stream = BytesIO()
-        print("s3", s3_key)
-        bucket.download_file_by_name(s3_key, byte_stream)
+        downloaded_file = bucket.download_file_by_name(s3_key)
+        downloaded_file.save(byte_stream)
         byte_stream.seek(0)
         return byte_stream.read()
     except Exception as e:
-        print("Error downloading file from B2:", e)
+        print(f"Error downloading file from B2: {e}")
         return None
 
 
