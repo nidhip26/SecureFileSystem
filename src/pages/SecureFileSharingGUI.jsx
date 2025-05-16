@@ -12,7 +12,7 @@ export default function SecureFileSharingGUI({ username, onLogout }) {
   const [selectedFile, setSelectedFile] = useState(null);
 
   useEffect(() => {
-    fetch('http://127.0.0.1:5000/users')
+    fetch('https://securefilesystem.onrender.com/users')
       .then(res => res.json())
       .then(data => {
         const otherUsers = data.filter(u => u.username !== username);
@@ -38,7 +38,7 @@ export default function SecureFileSharingGUI({ username, onLogout }) {
     formData.append('sender_username', username);
     formData.append('recipient_username', selectedUser);
 
-    fetch('http://127.0.0.1:5000/upload', {
+    fetch('https://securefilesystem.onrender.com/upload', {
       method: 'POST',
       body: formData
     })
@@ -139,7 +139,7 @@ export default function SecureFileSharingGUI({ username, onLogout }) {
   );
 
   // useEffect(() => {
-  //   fetch('http://127.0.0.1:5000/users')
+  //   fetch('https://securefilesystem.onrender.com/users')
   //     .then(res => res.json())
   //     .then(data => {
   //       const otherUsers = data.filter(u => u.username !== username);
@@ -167,7 +167,7 @@ export default function SecureFileSharingGUI({ username, onLogout }) {
   //   formData.append('sender_username', username); 
   //   formData.append('recipient_username', selectedUser);
   
-  //   fetch('http://127.0.0.1:5000/upload', {
+  //   fetch('https://securefilesystem.onrender.com/upload', {
   //     method: 'POST',
   //     body: formData
   //   })
