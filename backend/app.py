@@ -13,9 +13,6 @@ from flask import send_file
 from cryptography.hazmat.primitives import padding as sym_padding
 from cryptography.hazmat.primitives.serialization import load_der_private_key
 
-
-
-
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
@@ -509,8 +506,8 @@ def download_raw_file(file_id):
             return jsonify({'error': 'Missing or invalid JSON data'}), 400
         
         username = data.get('username')
-        password = data.get('password')
-        if not username or not password:
+        
+        if not username:
             return jsonify({'error': 'Username and password are required'}), 400
         
         # Step 1: Get user info
@@ -520,22 +517,7 @@ def download_raw_file(file_id):
             return jsonify({'error': 'User not found'}), 404
         
         user_id = user['id']
-        salt = b64decode(user['aes_salt'])
         
-        # Step 2: Derive AES key from password just to verify (optional)
-        from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-        from cryptography.hazmat.primitives import hashes
-        from cryptography.hazmat.backends import default_backend
-        
-        kdf = PBKDF2HMAC(
-            algorithm=hashes.SHA256(),
-            length=32,
-            salt=salt,
-            iterations=100_000,
-            backend=default_backend()
-        )
-        # Just derive key to confirm password format; no further use here
-        _ = kdf.derive(password.encode())
         
         # Step 3: Check file permission for this user
         cursor.execute(
