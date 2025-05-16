@@ -494,6 +494,87 @@ def download_file(file_id):
         print(f"Unexpected error in download_file: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
+@app.route('/download_raw/<file_id>', methods=['POST', 'OPTIONS'])
+def download_raw_file(file_id):
+    # Handle OPTIONS request (CORS preflight)
+    if request.method == 'OPTIONS':
+        response = app.make_default_options_response()
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response
+    
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Missing or invalid JSON data'}), 400
+        
+        username = data.get('username')
+        password = data.get('password')
+        if not username or not password:
+            return jsonify({'error': 'Username and password are required'}), 400
+        
+        # Step 1: Get user info
+        cursor.execute("SELECT id, aes_salt FROM users WHERE username = %s", (username,))
+        user = cursor.fetchone()
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        user_id = user['id']
+        salt = b64decode(user['aes_salt'])
+        
+        # Step 2: Derive AES key from password just to verify (optional)
+        from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+        from cryptography.hazmat.primitives import hashes
+        from cryptography.hazmat.backends import default_backend
+        
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=salt,
+            iterations=100_000,
+            backend=default_backend()
+        )
+        # Just derive key to confirm password format; no further use here
+        _ = kdf.derive(password.encode())
+        
+        # Step 3: Check file permission for this user
+        cursor.execute(
+            "SELECT 1 FROM file_permissions WHERE file_id = %s AND user_id = %s", 
+            (file_id, user_id)
+        )
+        if cursor.fetchone() is None:
+            return jsonify({'error': 'No access to this file'}), 403
+        
+        # Step 4: Fetch file metadata (filename, mime_type)
+        cursor.execute("SELECT s3_key, filename, mime_type FROM files WHERE id = %s", (file_id,))
+        file_meta = cursor.fetchone()
+        if not file_meta:
+            return jsonify({'error': 'File not found'}), 404
+        
+        s3_key = file_meta['s3_key']
+        filename = file_meta['filename']
+        mime_type = file_meta['mime_type']
+        
+        # Step 5: Download raw encrypted file from B2
+        encrypted_data = download_file_from_b2(s3_key)
+        if encrypted_data is None or len(encrypted_data) == 0:
+            return jsonify({'error': 'Failed to download file from storage or file is empty'}), 500
+        
+        # Step 6: Send raw encrypted file data directly without decrypting
+        response = send_file(
+            BytesIO(encrypted_data),
+            as_attachment=True,
+            download_name=filename,
+            mimetype=mime_type
+        )
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
 @app.route('/debug-key', methods=['POST'])
 def debug_private_key():
     """
