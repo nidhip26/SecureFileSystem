@@ -2,19 +2,30 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './Login.css';
+import axios from 'axios';
 
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    localStorage.setItem('username', username); 
-    localStorage.setItem('password', password); 
-    onLogin(username)
-    navigate('/');
-  };
+  const handleSubmit = async (e) => {
+      e.preventDefault();
+      try {
+        const response = await axios.post("https://securefilesystem.onrender.com/login", {
+          username,
+          password
+        });
+    
+        // If login is successful
+        localStorage.setItem("username", username);
+        localStorage.setItem("password", password);
+        onLogin(username);
+        navigate('/');
+      } catch (err) {
+        alert("Login failed: " + (err.response?.data?.error || err.message));
+      }
+    };
   
 
   return (
