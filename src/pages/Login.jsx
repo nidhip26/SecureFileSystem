@@ -10,8 +10,8 @@ export default function Login({ onLogin }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    localStorage.setItem('username', username); // ✅ Also ensure username is saved
-    localStorage.setItem('password', password); // ✅ Save password for later use
+    localStorage.setItem('username', username); 
+    localStorage.setItem('password', password); 
     onLogin(username)
     navigate('/');
   };
