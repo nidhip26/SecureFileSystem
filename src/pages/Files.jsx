@@ -9,7 +9,7 @@ export default function Files() {
 
   useEffect(() => {
     axios
-      .get(`https://securefilesystem.onrender.com/files?username=${username}`)
+      .get(`http://127.0.0.1:5000/files?username=${username}`)
       .then(res => setFiles(res.data))
       .catch(err => console.error(err));
   }, [username]);
@@ -29,7 +29,7 @@ export default function Files() {
   
       const response = await axios({
         method: 'post',
-        url: `https://securefilesystem.onrender.com/download/${selectedFile.id}`,
+        url: `http://127.0.0.1:5000/download/${selectedFile.id}`,
         data: {
           username,
           password: inputPassword
@@ -81,6 +81,40 @@ export default function Files() {
   };
   
   
+  const handleRawDownload = async () => {
+    if (!selectedFile) return;
+  
+    try {
+      console.log("Sending raw download request...");
+  
+      const response = await axios({
+        method: 'post',
+        url: `http://127.0.0.1:5000/download_raw/${selectedFile.id}`,
+        data: { username },
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': '*/*'
+        },
+        responseType: 'blob'
+      });
+  
+      console.log("Raw download response received:", response.status);
+  
+      const blob = new Blob([response.data]);
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = selectedFile.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(downloadUrl);
+  
+    } catch (err) {
+      console.error('Error downloading raw file:', err);
+      alert('Failed to download encrypted file.');
+    }
+  };
   
   
 
@@ -126,6 +160,10 @@ export default function Files() {
         <button onClick={handleDownload} className="download-button">
           Download & Decrypt
         </button>
+        <button onClick={handleRawDownload} className="download-button">
+          Download Encrypted
+        </button>
+
       </>
     ) : (
       <p>Select a file from the sidebar to view its details.</p>
@@ -134,67 +172,5 @@ export default function Files() {
 </div>
 </>
 
-    // <div style={{ display: 'flex', height: '100vh' }}>
-    //   {/* Sidebar */}
-    //   <div style={{
-    //     width: '250px',
-    //     backgroundColor: '#f4f4f4',
-    //     padding: '1rem',
-    //     borderRight: '1px solid #ccc',
-    //     overflowY: 'auto'
-    //   }}>
-    //     <h3>My Files</h3>
-    //     {files.map(file => (
-    //       <button
-    //         key={file.id}
-    //         onClick={() => setSelectedFile(file)}
-    //         style={{
-    //           display: 'block',
-    //           width: '100%',
-    //           marginBottom: '0.5rem',
-    //           padding: '0.5rem',
-    //           backgroundColor: selectedFile?.id === file.id ? '#ddd' : '#fff',
-    //           border: '1px solid #ccc',
-    //           cursor: 'pointer'
-    //         }}
-    //       >
-    //         {file.filename}
-    //       </button>
-    //     ))}
-    //   </div>
-
-    //   {/* File Preview */}
-    //   <div style={{ flex: 1, padding: '1rem' }}>
-    //     {selectedFile ? (
-    //       <>
-    //         <h2>{selectedFile.filename}</h2>
-    //         <p><strong>MIME Type:</strong> {selectedFile.mime_type}</p>
-    //         <p><strong>Size:</strong> {selectedFile.size} bytes</p>
-    //         <p><strong>Contents:</strong></p>
-    //         <div style={{ background: '#eee', padding: '1rem' }}>
-    //           <pre>
-    //             This is pseudo content for: {selectedFile.filename}
-    //           </pre>
-    //         </div>
-    //         <button
-    //           onClick={handleDownload}
-    //           style={{
-    //             marginTop: '1rem',
-    //             padding: '0.5rem 1rem',
-    //             backgroundColor: '#007bff',
-    //             color: 'white',
-    //             border: 'none',
-    //             borderRadius: '4px',
-    //             cursor: 'pointer'
-    //           }}
-    //         >
-    //           Download & Decrypt
-    //         </button>
-    //       </>
-    //     ) : (
-    //       <p>Select a file from the sidebar to view its details.</p>
-    //     )}
-    //   </div>
-    // </div>
   );
 }
